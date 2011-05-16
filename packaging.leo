@@ -9,7 +9,6 @@
 <preferences/>
 <find_panel_settings/>
 <vnodes>
-<v t="ville.20110516134623.2556"><vh>@auto-rst packaging.txt</vh></v>
 <v t="ville.20110516134623.2562" a="E"><vh>@path doc</vh>
 <v t="ville.20110516134623.2563" a="E"><vh>@auto-rst packaging.txt</vh></v>
 </v>

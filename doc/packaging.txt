@@ -129,3 +129,13 @@ In MeeGo, the recommendation is not to build the .spec by hand, but rather use "
 This is converted to a .spec file by running "specify" in the directory. The reference to sources is a local .tar.gz file here, but it can also refer to a 
 file on the internet (or even a git snapshot) that gets downloaded by "specify".
 
+N900 DE
+*******
+
+To package for N900 Developer Edition, you need to create a target that is not
+available in the default selection. To accomplish this, go to Repository list,
+select "Add new repository" and "Add using advanced interface". Using the autocompletion 
+feature, enter "Trunk:DE" as repository.
+
+.. image: screenshot
+
