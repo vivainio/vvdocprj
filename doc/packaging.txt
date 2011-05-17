@@ -147,3 +147,79 @@ available in the default selection. To accomplish this
 
 .. image:: pics/addrepode.png
 
+Automating the packaging
+++++++++++++++++++++++++
+
+Creating the .tar.g manually is tedious and error prone (you may accidentally
+include object code, temporary files and version control information). git, hg,
+and bzr all include a command to generate a "clean" .tar.gz from the version
+controlled files (bzr export, git archive, hg archive). Here's an example script
+you can adapt to your needs; it simple creates the .tar.gz using git, copies the
+files to "obs" working directory from which they can be uploaded to OBS and runs
+"specify" to create the .spec file::
+
+    """ Script to generate necessary files for OBS
+    
+    To get "sloppycode", do "bzr branch lp:sloppycode", and do "setup.py install".
+    
+    """
+    
+    sc.ns.VER = "1.0"
+    sc.ns.PACKAGE = 'info.vivainio.qmlreddit'
+    sc.ns.OBSPRJ = sc.fpath('~/obs/home:vivainio/qmlreddit')
+    sc.ns.TARB = sc.fpath("${OBSPRJ}/${PACKAGE}-${VER}.tar")
+    
+    
+    sh = sc.shrun
+    sc.verbose = 1
+    with sc.chdir('..'):
+        sh("git archive -o ${TARB} --prefix ${PACKAGE}-$VER/ HEAD" )
+        sh("gzip ${TARB}")
+        sh('tar tf ${TARB}.gz')
+        sh('cp ${PACKAGE}.yaml ${PACKAGE}.spec ${OBSPRJ}')
+        with sc.chdir('${OBSPRJ}'):
+            sh('specify ${PACKAGE}.yaml')
+
+Automating OBS usage with "osc" command line tool
++++++++++++++++++++++++++++++++++++++++++++++++++
+
+OBS web inteface is quite friendly and convenient, and it includes the ability to edit the .spec files "in place".
+It also gets annoying quite fast when you perform several rebuilds of the same project in succession. That's why,
+for iterative development, you will typically use "osc".
+
+Osc operates like svn, so the commands should be familiar to most developers.
+
+After installing osc (install from source recommended, at least Maverick has an
+obsolete version), you should should initialize osc to use meego community obs
+and check out your working area:
+
+    $ rm ~/.oscrc
+    $ osc -A https://api.pub.meego.com
+    
+    Your user account / password are not configured yet.
+    You will be asked for them below, and they will be stored in
+    /home/ville/.oscrc for future use.
+    
+    Creating osc configuration file /home/ville/.oscrc ...
+    Username: vivainio
+    Password: 
+    done
+
+    $ osc co home:vivainio    
+
+    A    home:vivainio
+    A    home:vivainio/kasvopus
+    A    home:vivainio/kasvopus/com.substanceofcode.kasvopus-1.0.tar.gz
+    
+    ...
+    
+    
+    A    home:vivainio/newsflow
+    
+    ...
+    
+
+After you have your work area checked out, you can modify these files (manually
+or by scripts), then run "osc ci" to "check in", i.e. upload the changed files.
+After files have been uploaded, they will be automatically built at obs.
+
