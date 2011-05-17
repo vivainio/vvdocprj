@@ -19,7 +19,8 @@
     </script>
     <script type="text/javascript" src="_static/jquery.js"></script>
     <script type="text/javascript" src="_static/doctools.js"></script>
-    <link rel="top" title="Devdoc v1.0 documentation" href="index.html" /> 
+    <link rel="top" title="Devdoc v1.0 documentation" href="index.html" />
+    <link rel="prev" title="Welcome to Devdoc’s documentation!" href="index.html" /> 
   </head>
   <body>
     <div class="related">
@@ -28,6 +29,9 @@
         <li class="right" style="margin-right: 10px">
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="index.html" title="Welcome to Devdoc’s documentation!"
+             accesskey="P">previous</a> |</li>
         <li><a href="index.html">Devdoc v1.0 documentation</a> &raquo;</li> 
       </ul>
     </div>  
@@ -165,6 +169,76 @@ feature, enter &#8220;Project:DE:Trunk&#8221; as repository.</li>
 <img alt="_images/addrepode.png" src="_images/addrepode.png" />
 </div>
 </div>
+<div class="section" id="automating-the-packaging">
+<h2>Automating the packaging<a class="headerlink" href="#automating-the-packaging" title="Permalink to this headline">¶</a></h2>
+<p>Creating the .tar.g manually is tedious and error prone (you may accidentally
+include object code, temporary files and version control information). git, hg,
+and bzr all include a command to generate a &#8220;clean&#8221; .tar.gz from the version
+controlled files (bzr export, git archive, hg archive). Here&#8217;s an example script
+you can adapt to your needs; it simple creates the .tar.gz using git, copies the
+files to &#8220;obs&#8221; working directory from which they can be uploaded to OBS and runs
+&#8220;specify&#8221; to create the .spec file:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="sd">&quot;&quot;&quot; Script to generate necessary files for OBS</span>
+
+<span class="sd">To get &quot;sloppycode&quot;, do &quot;bzr branch lp:sloppycode&quot;, and do &quot;setup.py install&quot;.</span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="n">sc</span><span class="o">.</span><span class="n">ns</span><span class="o">.</span><span class="n">VER</span> <span class="o">=</span> <span class="s">&quot;1.0&quot;</span>
+<span class="n">sc</span><span class="o">.</span><span class="n">ns</span><span class="o">.</span><span class="n">PACKAGE</span> <span class="o">=</span> <span class="s">&#39;info.vivainio.qmlreddit&#39;</span>
+<span class="n">sc</span><span class="o">.</span><span class="n">ns</span><span class="o">.</span><span class="n">OBSPRJ</span> <span class="o">=</span> <span class="n">sc</span><span class="o">.</span><span class="n">fpath</span><span class="p">(</span><span class="s">&#39;~/obs/home:vivainio/qmlreddit&#39;</span><span class="p">)</span>
+<span class="n">sc</span><span class="o">.</span><span class="n">ns</span><span class="o">.</span><span class="n">TARB</span> <span class="o">=</span> <span class="n">sc</span><span class="o">.</span><span class="n">fpath</span><span class="p">(</span><span class="s">&quot;${OBSPRJ}/${PACKAGE}-${VER}.tar&quot;</span><span class="p">)</span>
+
+
+<span class="n">sh</span> <span class="o">=</span> <span class="n">sc</span><span class="o">.</span><span class="n">shrun</span>
+<span class="n">sc</span><span class="o">.</span><span class="n">verbose</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="k">with</span> <span class="n">sc</span><span class="o">.</span><span class="n">chdir</span><span class="p">(</span><span class="s">&#39;..&#39;</span><span class="p">):</span>
+    <span class="n">sh</span><span class="p">(</span><span class="s">&quot;git archive -o ${TARB} --prefix ${PACKAGE}-$VER/ HEAD&quot;</span> <span class="p">)</span>
+    <span class="n">sh</span><span class="p">(</span><span class="s">&quot;gzip ${TARB}&quot;</span><span class="p">)</span>
+    <span class="n">sh</span><span class="p">(</span><span class="s">&#39;tar tf ${TARB}.gz&#39;</span><span class="p">)</span>
+    <span class="n">sh</span><span class="p">(</span><span class="s">&#39;cp ${PACKAGE}.yaml ${PACKAGE}.spec ${OBSPRJ}&#39;</span><span class="p">)</span>
+    <span class="k">with</span> <span class="n">sc</span><span class="o">.</span><span class="n">chdir</span><span class="p">(</span><span class="s">&#39;${OBSPRJ}&#39;</span><span class="p">):</span>
+        <span class="n">sh</span><span class="p">(</span><span class="s">&#39;specify ${PACKAGE}.yaml&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="automating-obs-usage-with-osc-command-line-tool">
+<h2>Automating OBS usage with &#8220;osc&#8221; command line tool<a class="headerlink" href="#automating-obs-usage-with-osc-command-line-tool" title="Permalink to this headline">¶</a></h2>
+<p>OBS web inteface is quite friendly and convenient, and it includes the ability to edit the .spec files &#8220;in place&#8221;.
+It also gets annoying quite fast when you perform several rebuilds of the same project in succession. That&#8217;s why,
+for iterative development, you will typically use &#8220;osc&#8221;.</p>
+<p>Osc operates like svn, so the commands should be familiar to most developers.</p>
+<p>After installing osc (install from source recommended, at least Maverick has an
+obsolete version), you should should initialize osc to use meego community obs
+and check out your working area:</p>
+<blockquote>
+<p>$ rm ~/.oscrc
+$ osc -A <a class="reference external" href="https://api.pub.meego.com">https://api.pub.meego.com</a></p>
+<p>Your user account / password are not configured yet.
+You will be asked for them below, and they will be stored in
+/home/ville/.oscrc for future use.</p>
+<p>Creating osc configuration file /home/ville/.oscrc ...
+Username: vivainio
+Password:
+done</p>
+<p>$ osc co home:vivainio</p>
+<p>A    home:vivainio
+A    home:vivainio/kasvopus
+A    home:vivainio/kasvopus/com.substanceofcode.kasvopus-1.0.tar.gz</p>
+<p>...</p>
+<p>A    home:vivainio/newsflow</p>
+<p>...</p>
+</blockquote>
+<p>After you have your work area checked out, you can modify these files (manually
+or by scripts), then run &#8220;osc ci&#8221; to &#8220;check in&#8221;, i.e. upload the changed files.
+After files have been uploaded, they will be automatically built at obs.</p>
+</div>
+<div class="section" id="materials">
+<h2>Materials<a class="headerlink" href="#materials" title="Permalink to this headline">¶</a></h2>
+<p>You can find reStructuredText source code for this documentation, as well as
+latest versions of code snippets and scripts, at
+<a class="reference external" href="https://github.com/vivainio/vvdocprj">https://github.com/vivainio/vvdocprj</a></p>
+</div>
 </div>
 
 
@@ -184,10 +258,16 @@ feature, enter &#8220;Project:DE:Trunk&#8221; as repository.</li>
 <li><a class="reference external" href="#n900-de">N900 DE</a></li>
 </ul>
 </li>
+<li><a class="reference external" href="#automating-the-packaging">Automating the packaging</a></li>
+<li><a class="reference external" href="#automating-obs-usage-with-osc-command-line-tool">Automating OBS usage with &#8220;osc&#8221; command line tool</a></li>
+<li><a class="reference external" href="#materials">Materials</a></li>
 </ul>
 </li>
 </ul>
 
+            <h4>Previous topic</h4>
+            <p class="topless"><a href="index.html"
+                                  title="previous chapter">Welcome to Devdoc&#8217;s documentation!</a></p>
             <h3>This Page</h3>
             <ul class="this-page-menu">
               <li><a href="_sources/packaging.txt"
@@ -216,6 +296,9 @@ feature, enter &#8220;Project:DE:Trunk&#8221; as repository.</li>
         <li class="right" style="margin-right: 10px">
           <a href="genindex.html" title="General Index"
              >index</a></li>
+        <li class="right" >
+          <a href="index.html" title="Welcome to Devdoc’s documentation!"
+             >previous</a> |</li>
         <li><a href="index.html">Devdoc v1.0 documentation</a> &raquo;</li> 
       </ul>
     </div>
