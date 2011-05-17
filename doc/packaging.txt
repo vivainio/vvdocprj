@@ -223,3 +223,10 @@ After you have your work area checked out, you can modify these files (manually
 or by scripts), then run "osc ci" to "check in", i.e. upload the changed files.
 After files have been uploaded, they will be automatically built at obs.
 
+Materials
++++++++++
+
+You can find reStructuredText source code for this documentation, as well as
+latest versions of code snippets and scripts, at
+https://github.com/vivainio/vvdocprj
+
