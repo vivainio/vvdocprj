@@ -1,0 +1,227 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Cross platform packaging with Qt Creator &mdash; Devdoc v1.0 documentation</title>
+    <link rel="stylesheet" href="_static/default.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '',
+        VERSION:     '1.0',
+        COLLAPSE_MODINDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="Devdoc v1.0 documentation" href="index.html" /> 
+  </head>
+  <body>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li><a href="index.html">Devdoc v1.0 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body">
+            
+  <div class="section" id="cross-platform-packaging-with-qt-creator">
+<h1>Cross platform packaging with Qt Creator<a class="headerlink" href="#cross-platform-packaging-with-qt-creator" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="fixing-packaging-for-maemo5">
+<h2>Fixing packaging for maemo5<a class="headerlink" href="#fixing-packaging-for-maemo5" title="Permalink to this headline">¶</a></h2>
+<p>Qt creator (2.1, 2.2) creates packaging that is &#8220;almost&#8221; valid for maemo 5 and
+Symbian. The packaging is maintained at qtc_packaging/debian_fremantle. Qt
+creator does use a bit of a hacky way to create the package though, in that it
+builds the binary itself and only uses packaging tools to package that binary.
+The correct way for debian based distributions is to provide sufficient
+instructions to build the whole package with the instructions provided in
+debian/rules.</p>
+<p>In order to be able to do a standalone build, you need to fix up debian/rules a bit:</p>
+<div class="highlight-python"><pre>build-stamp: configure-stamp
+        dh_testdir
+
+        # Add here commands to compile the package.
+
+
+        qmake PREFIX=/usr
+        $(MAKE)
+        #docbook-to-man debian/qmlreddit.sgml &gt; qmlreddit.1
+
+        touch $@</pre>
+</div>
+<p>Here we added the call to qmake. Cleanup needs changes as well:</p>
+<div class="highlight-python"><pre>clean:
+        dh_testdir
+        dh_testroot
+        rm -f build-stamp configure-stamp
+
+        # Add here commands to clean up after the build process.
+        -$(MAKE) clean
+
+        dh_clean</pre>
+</div>
+<p>Here, we added minus to $(MAKE) clean, in order to prevent it croaking on the first build.</p>
+<p>In addition to these, you need to change debian/compat to &#8220;5&#8221; instead of &#8220;7&#8221;,
+after which you can build your project normally in scratchbox, Remote Compiler
+maemo5 target (that also uses scratchbox), and extras autobuilder. Note that
+these changes <strong>do</strong> break normal maemo5 target builds (using madde and Qt
+Creator), which means you need to use remote compiler in subsequent builds.</p>
+</div>
+<div class="section" id="fixing-the-pro-files-for-meego-compliance">
+<h2>Fixing the pro files for meego compliance<a class="headerlink" href="#fixing-the-pro-files-for-meego-compliance" title="Permalink to this headline">¶</a></h2>
+<p>Meego Compliance requires that third party applications have package names like
+&lt;mydomain&gt;.&lt;myappname&gt; (e.g. com.microsoft.office), and subsequently that
+application binaries are installed under /opt/&lt;mydomain&gt;.&lt;myappname&gt; (e.g.
+/opt/com.microsoft.office). Qt Creator 2.2, on the other hand, creates .pro file
+(or to be exact, qmlapplicationviewer.pri), so that it installs the packaged
+files under /opt/&lt;myappname&gt; (where &lt;myappname&gt; can&#8217;t contain dots). To work
+around that, you need to make a copy of <em>qmlapplicationviewer.pri</em> (e.g. to
+&#8220;myqmlapplicationviewer.pri&#8221;) and include it instead of the original
+qmlapplicationviewer.pri. Editing qmlapplicationviewer.pri directly is not
+recommended as it will be overwritten on qt creator upgrades.</p>
+<p>The key change in the new applicationviewer is introduction of PACKAGENAME that
+is used to derive the installation directory. This is a single line change, convert:</p>
+<div class="highlight-python"><pre>installPrefix = /opt/$${TARGET}</pre>
+</div>
+<p>To:</p>
+<div class="highlight-python"><pre>installPrefix = /opt/$${PACKAGENAME}</pre>
+</div>
+<p>Obviously you also need to specify PACKAGENAME in your .pro file, and include myqmlapplicationviewer.pri instead of applicationviewer.pri:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="n">PACKAGENAME</span> <span class="o">=</span> <span class="n">com</span><span class="o">.</span><span class="n">substanceofcode</span><span class="o">.</span><span class="n">twimgo</span>
+
+<span class="c"># Please do not modify the following two lines. Required for deployment.</span>
+<span class="n">include</span><span class="p">(</span><span class="n">qmlapplicationviewer</span><span class="o">/</span><span class="n">myqmlapplicationviewer</span><span class="o">.</span><span class="n">pri</span><span class="p">)</span>
+<span class="n">qtcAddDeployment</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="rpm-packaging-at-obs">
+<h2>RPM packaging at OBS<a class="headerlink" href="#rpm-packaging-at-obs" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="obs-overview">
+<h3>OBS Overview<a class="headerlink" href="#obs-overview" title="Permalink to this headline">¶</a></h3>
+<p>OBS (OpenSuse Build System) is a web service where you upload source code, and it produces packages (rpm or deb) that get uploaded to a personal repository. You can point &#8220;zypper&#8221; to this personal repository to download files from there, or download the packages manually through the web interface.</p>
+<p>OBS can build the sources against multiple targets - e.g. MeeGo 1.1 Netbook (x86), MeeGo 1.1 Handset (ARM, X86), or MeeGo N900 Developer Edition (ARM). Harmattan will also be provided as an OBS target.</p>
+<p>The MeeGo community OBS sits at <a class="reference external" href="http://build.pub.meego.com">http://build.pub.meego.com</a>, and you can currently
+get an account by requesting for one from &#8216;lbt&#8217; at #meego irc channel.</p>
+</div>
+<div class="section" id="rpm-packaging-for-meego">
+<h3>RPM packaging for MeeGo<a class="headerlink" href="#rpm-packaging-for-meego" title="Permalink to this headline">¶</a></h3>
+<p>To build an RPM, you need a .spec file (packaging metadata and build steps,
+equivalent to contents of debian/ directory) and the source code (e.g. a
+tarball). You upload both of these to OBS, after which OBS builds the package.</p>
+<img alt="_images/sourcefiles.png" src="_images/sourcefiles.png" />
+<p>In MeeGo, the recommendation is not to build the .spec by hand, but rather use &#8220;spectacle&#8221; to generate the .spec from a simpler .yaml file. An example .yaml file looks like this:</p>
+<div class="highlight-python"><pre>Name: com.substanceofcode.twimgo
+Summary: Twitter client
+Version: 2.8.3
+Release: 1
+Group: Applications/Internet
+License: TBD
+URL: http://www.substanceofcode.com/
+Sources:
+    - "%{name}-%{version}.tar.gz"
+Description:
+ Twitter client
+
+PkgConfigBR:
+    - QtCore &gt;= 4.7.0
+    - QtGui
+    - QtWebKit
+    - QtOpenGL
+Configure: none
+Builder: qmake
+Files:
+    - "/usr/share"
+    - "/opt"</pre>
+</div>
+<p>This is converted to a .spec file by running &#8220;specify&#8221; in the directory. The reference to sources is a local .tar.gz file here, but it can also refer to a
+file on the internet (or even a git snapshot) that gets downloaded by &#8220;specify&#8221;.</p>
+</div>
+<div class="section" id="n900-de">
+<h3>N900 DE<a class="headerlink" href="#n900-de" title="Permalink to this headline">¶</a></h3>
+<p>To package for N900 Developer Edition, you need to create a target that is not
+available in the default selection. To accomplish this</p>
+<ul class="simple">
+<li>Go to &#8220;Repositories&#8221; tab from your home project</li>
+<li>&#8220;Add repositories&#8221;</li>
+<li>&#8220;pick one via advanced interfare&#8221;. Using the autocompletion
+feature, enter &#8220;Project:DE:Trunk&#8221; as repository.</li>
+<li>Leave &#8220;standard&#8221; in &#8220;Repository&#8221; combo box</li>
+<li>Enter convenient alias (like &#8220;DE&#8221;) in &#8220;New Name&#8221; combo box</li>
+<li>Only leave armv8el checkbox checked</li>
+</ul>
+<img alt="_images/addrepode.png" src="_images/addrepode.png" />
+</div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar">
+        <div class="sphinxsidebarwrapper">
+            <h3><a href="index.html">Table Of Contents</a></h3>
+            <ul>
+<li><a class="reference external" href="#">Cross platform packaging with Qt Creator</a><ul>
+<li><a class="reference external" href="#fixing-packaging-for-maemo5">Fixing packaging for maemo5</a></li>
+<li><a class="reference external" href="#fixing-the-pro-files-for-meego-compliance">Fixing the pro files for meego compliance</a></li>
+<li><a class="reference external" href="#rpm-packaging-at-obs">RPM packaging at OBS</a><ul>
+<li><a class="reference external" href="#obs-overview">OBS Overview</a></li>
+<li><a class="reference external" href="#rpm-packaging-for-meego">RPM packaging for MeeGo</a></li>
+<li><a class="reference external" href="#n900-de">N900 DE</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+            <h3>This Page</h3>
+            <ul class="this-page-menu">
+              <li><a href="_sources/packaging.txt"
+                     rel="nofollow">Show Source</a></li>
+            </ul>
+          <div id="searchbox" style="display: none">
+            <h3>Quick search</h3>
+              <form class="search" action="search.html" method="get">
+                <input type="text" name="q" size="18" />
+                <input type="submit" value="Go" />
+                <input type="hidden" name="check_keywords" value="yes" />
+                <input type="hidden" name="area" value="default" />
+              </form>
+              <p class="searchtip" style="font-size: 90%">
+              Enter search terms or a module, class or function name.
+              </p>
+          </div>
+          <script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li><a href="index.html">Devdoc v1.0 documentation</a> &raquo;</li> 
+      </ul>
+    </div>
+    <div class="footer">
+      &copy; Copyright 2011, Ville M. Vainio.
+      Created using <a href="http://sphinx.pocoo.org/">Sphinx</a> 0.6.6.
+    </div>
+  </body>
+</html>
