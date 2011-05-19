@@ -18,7 +18,10 @@ PkgConfigBR:
     - QtWebKit
     - QtOpenGL
 Configure: none
+Requires:
+    - libqtwebkit-qmlwebkitplugin
 Builder: qmake 
 Files:
-    - "/usr/share"
-    - "/opt"
+    - "/usr/share/applications/%{name}.desktop"
+    - "/opt/%{name}"
+    - "/usr/share/icons/hicolor/*/apps/%{name}.png"
