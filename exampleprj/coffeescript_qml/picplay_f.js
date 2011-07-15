@@ -1,6 +1,6 @@
 .pragma library
 
-var jsexports = [];
+var jsexports = {};
 
 
 (function() {
