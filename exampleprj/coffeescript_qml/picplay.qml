@@ -16,8 +16,11 @@ Rectangle {
         }
     }
     Component.onCompleted: {
-        P.jsexports.sayhello()
-        var pics = P.jsexports.pics()
-        console.log(pics)
+        function gotresults(obj) {
+            console.log("Got results!" + obj)
+        }
+
+        var ts = new P.jsexports.TwitterSearch()
+        ts.search("@vivainio", gotresults)
     }
 }
