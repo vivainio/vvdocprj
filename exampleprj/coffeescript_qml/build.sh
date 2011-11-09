@@ -1,3 +1,3 @@
-coffee -cp *.coffee > picplay_combo.js
-cat prelude_js picplay_combo.js > picplay_f.js
+coffee -c *.coffee 
+cat prelude_js a.js b.js > picplay_f.js
 rm picplay_combo.js
