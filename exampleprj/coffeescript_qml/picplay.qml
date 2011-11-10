@@ -17,10 +17,12 @@ Rectangle {
     }
     Component.onCompleted: {
         function gotresults(obj) {
-            console.log("Got results!" + obj)
+            console.log("R")
+            console.log(obj)
         }
 
-        var ts = new P.jsexports.TwitterSearch()
-        ts.search("@vivainio", gotresults)
+        var p = new P.jsexports.YahooPipe()
+        p.fetch("6a99250ae0c6e00165d7ff28c7b8b4f8", gotresults)
+        //ts.search("@vivainio", gotresults)
     }
 }
